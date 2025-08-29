@@ -11,11 +11,8 @@ class VideoTest:
         self.video_id = 3434
 
     def testGet(self):
-        try:
-            response = requests.get(self.base + self.extension + "/" + str(self.video_id))
-            print(response.json())
-        except HTTPError as err:
-            print(err)
+        response = requests.get(self.base + self.extension + "/" + str(self.video_id))
+        print(response.json())
 
     def testPut(self):
         update_video_id = self.video_id
