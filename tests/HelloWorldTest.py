@@ -1,12 +1,12 @@
 import requests
 
-from src.common.Globals import BASE, HELLO_WORLD
+from src.common.Globals import BASE_URL, EXTENSION_HELLO_WORLD
 
 class HelloWorldTest:
 
     def __init__(self):
-        self.base = BASE
-        self.extension = HELLO_WORLD
+        self.base = BASE_URL
+        self.extension = EXTENSION_HELLO_WORLD
 
     def testGet(self):
         response = requests.get(self.base + self.extension)
