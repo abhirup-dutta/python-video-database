@@ -1,12 +1,15 @@
-from functools import update_wrapper
-
 from flask_restful import Resource, reqparse
 
-videos = {}
+from flask import Flask
+from flask_restful import Api
+from flask_sqlalchemy import SQLAlchemy
 
 
-class Video(Resource):
-    def __init__(self):
+
+class VideoRESTEndpoint(Resource):
+    def __init__(self, **kwargs):
+        self.db_access = kwargs['db_access']
+
         self.video_put_args = reqparse.RequestParser()
         self.video_put_args.add_argument("name", type=str, help="Name of the video")
         self.video_put_args.add_argument("views", type=int, help="Number of views of the video")
@@ -20,72 +23,86 @@ class Video(Resource):
 
 
     def get(self, video_id):
-        if video_id not in videos:
+        print("REST GET BEGIN")
+        video_result = self.db_access.read(video_id)
+        print("REST Get: " + str(video_result))
+        if not self.db_access.isValid(video_result):
             get_failure_msg_object = {
                 "message" : "Requested video not found in the store.",
                 "id" : video_id
             }
+            print("REST GET END")
             return get_failure_msg_object, 404
         else:
-            return videos[video_id], 200
+            print("REST GET END")
+            return video_result, 200
 
 
     def put(self, video_id):
+        print("REST PUT BEGIN")
         args = self.video_put_args.parse_args()
-        if video_id not in videos:
+        video_result = self.db_access.read(video_id)
+        if not self.db_access.isValid(video_result):
             update_failure_msg_object = {
                 "message": "Requested video not found in the store.",
                 "id": video_id
             }
+            print("REST PUT END")
             return update_failure_msg_object, 404
         else:
-            videos[video_id] = args
+            self.db_access.update(video_id, args)
+            video_result = self.db_access.read(video_id)
             update_success_msg_object = {
                 "message": "Successfully updated video details.",
                 "id": video_id,
-                "data": args
+                "data": video_result
             }
+            print("REST PUT END")
             return update_success_msg_object, 200
 
 
     def post(self):
+        print("REST POST BEGIN")
         args = self.video_post_args.parse_args()
         video_id = args["id"]
-        if video_id in videos:
+        video_result = self.db_access.read(video_id)
+        if self.db_access.isValid(video_result):
             create_failure_msg_object = {
                 "message" : "Resource with this id already exists. Use PUT to update the existing resource, or DELETE to remove it first.",
                 "id" : video_id
             }
+            print("REST POST END")
             return create_failure_msg_object, 400
         else:
-            video_data = {
-                "name" : args["name"],
-                "views" : args["views"],
-                "likes" : args["likes"]
-            }
-            videos[video_id] = video_data
+            self.db_access.create(args)
+            video_result = self.db_access.read(video_id)
             create_success_msg_object = {
                 "message" : "Created new video details successfully.",
                 "id" : video_id,
-                "data" : videos[video_id]
+                "data" : str(video_result)
             }
+            print("REST POST END")
             return create_success_msg_object, 200
 
 
     def delete(self, video_id):
-        if video_id not in videos:
+        print("REST DELETE BEGINNING")
+        video_result = self.db_access.read(video_id)
+        if not self.db_access.isValid(video_result):
             delete_nonexistent_msg_object = {
                 "message": "Requested video to be deleted did not exist.",
                 "id": video_id
             }
+            print("REST DELETE END")
             # still a success, to take care of duplicate deletes due to network issues
             return delete_nonexistent_msg_object, 200
         else:
-            videos.pop(video_id)
+            self.db_access.delete(video_id)
             delete_success_msg_object = {
                 "message": "Deleted video details successfully.",
                 "id": video_id
             }
+            print("REST DELETE END")
             return delete_success_msg_object, 200
 
 
